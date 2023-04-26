@@ -1,0 +1,9 @@
+#!/usr/bin/chezscheme --script
+
+(load (car (command-line-arguments)))
+
+(define source-file (cadr (command-line-arguments)))
+(load source-file)
+(graph-puts (format "/tmp/~a" source-file) #f)
+
+(exit)
