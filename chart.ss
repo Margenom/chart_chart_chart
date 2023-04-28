@@ -120,6 +120,7 @@ struct
 (define (sub root . ids) (set! graph-subs (cons `(,root ,ids ,defs-sub) graph-edges)))
 
 ;Objects
+;op: name, opts dot
 (define (box text . opts) 
   (define name (and (not (null? opts)) (string? (car opts)) (car opts)))
   (define (opts-def defs opts) ((lambda(d) (append opts d)) (filter (lambda(d) (not (member (car d) opts))) defs)))
@@ -136,3 +137,38 @@ struct
     `((image . ,url-img) (label . "") (shape . "none")) 
     (if name (cdr opts) opts)))
   graph-objects)) (or name url-img))
+
+(import (cairo))
+
+(cairo-library-init)
+(define pi (* 2 (acos 0)))
+
+;op: name, opts dot
+(define (draw surf . op)
+  (let* ([name (or (and (> (length op) 1) (list-ref op 1)) (format "draw~a" (length graph-objects)))]
+         [path (format "~a~a.png" prefix name)])
+    (cairo-surface-write-to-png surf path)
+    (apply img path name (if (> (length op) 2) (list-tail op 1) '())) ))
+
+;op: format
+(define (draw-surface size proc . op)
+  (let* ([form (or (and (> (length op) 1) (list-ref op 0)) 'argb-32)]
+         [surface (apply cairo-image-surface-create (cairo-format form) size)]
+	 [cr (cairo-create surface)])
+    (cairo-select-font-face cr "Sans" (cairo-font-slant 'normal) (cairo-font-weight 'normal)) 
+    (cairo-set-font-size cr 15.0)
+    (proc surface cr (cdr-list size) (car size))
+    surface))
+
+(define (draw-textc cr -x -y text)
+    (let ([extents (cairo-text-extents-create)])
+      (cairo-text-extents cr text extents)
+      (let-struct extents cairo-text-extents-t (width height x-bearing y-bearing)
+        (let ([x (- -x (+ (/ width 2) x-bearing))]
+              [y (- -y (+ (/ height 2) y-bearing))])
+          (cairo-move-to cr x y) 
+          (cairo-show-text cr text)
+          ; draw helping lines 
+          ;(cairo-set-source-rgba cr 1 0.2 0.2 0.6) 
+          ;(cairo-set-line-width cr 6.0) 
+          #;(cairo-arc cr x y 10.0 0 (* 2 pi))))))
