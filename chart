@@ -1,10 +1,16 @@
-#!/usr/bin/chezscheme --script
+#!/bin/sh
 
-(define prefix "/tmp/")
-(load (car (command-line-arguments)))
+CHART_DIR=`dirname \`readlink $0\``
+INPUT_SEX="$1"
+OUTPUT_DOT="$2"
 
-(define source-file (cadr (command-line-arguments)))
-(load source-file)
-(graph-puts (format "~a~a" prefix source-file) #f)
+[ -z "$OUTPUT_DOT" ] && OUTPUT_DOT=/tmp/`basename ${INPUT_SEX%.*}`.dot
 
-(exit)
+$CHART_DIR/main.ss $CHART_DIR "$INPUT_SEX" "$OUTPUT_DOT" 
+
+if (false) ; then
+    USERDIR=`pwd`
+    cd `dirname "$OUTPUT_DOT"`
+    xdot "$OUTPUT_DOT" & > /dev/null
+    cd $USERDIR
+fi

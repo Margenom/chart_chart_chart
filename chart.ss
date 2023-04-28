@@ -94,7 +94,7 @@ struct
     #;(apply string-append (map (lambda(sub) (format "subgraph cluster_~a {cluster=true ~a \n~a}" (car sub) ))))
 "\n}"))
 
-(define (graph-puts name direct . etc) (with-output-to-file (format "~a.dot" name) (lambda()
+(define (graph-puts name direct . etc) (with-output-to-file (format "~a" name) (lambda()
    (display (apply graph-dot name direct (if (null? etc) '(()()) etc)))) 'replace))
 
 
@@ -138,6 +138,27 @@ struct
     (if name (cdr opts) opts)))
   graph-objects)) (or name url-img))
 
+(define (table fields . op/ts)
+  (define text 
+   (let ((d0-cons (lambda (d0) (fold-left (lambda(out di) (format "~a|~a" out di)) (car d0) (cdr d0)))))
+    (d0-cons 
+     (let rc ((dn fields)) 
+       (if (null? dn) '() 
+           (cons (let ((di (car dn)))
+                   (if (list? di) (format "{~a}" (d0-cons (rc di))) 
+                       (if (pair? di) (format "<~a>~a" (car di) (cdr di))
+                           (format "~a" di))))
+                 (rc (cdr dn))))))))
+
+  (define name (and (not (null? opts)) (string? (car opts)) (car opts)))
+  (define (opts-def defs opts) ((lambda(d) (append opts d)) (filter (lambda(d) (not (member (car d) opts))) defs)))
+  (if root (sub root (or name text)))
+  (set! graph-objects (cons (list (or name text) 'box (opts-def defs-box (append 
+    `((label . ,text) (shape . "record")) 
+    (if name (cdr opts) opts))))
+  graph-objects)) (or name text))
+(define (tb table-name table-field) (format "~a:~a" table-name table-field))
+
 (import (cairo))
 
 (cairo-library-init)
@@ -146,7 +167,7 @@ struct
 ;op: name, opts dot
 (define (draw surf . op)
   (let* ([name (or (and (> (length op) 1) (list-ref op 1)) (format "draw~a" (length graph-objects)))]
-         [path (format "~a~a.png" prefix name)])
+         [path (format "~a/~a.png" prefix name)])
     (cairo-surface-write-to-png surf path)
     (apply img path name (if (> (length op) 2) (list-tail op 1) '())) ))
 
