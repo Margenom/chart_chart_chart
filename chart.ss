@@ -9,8 +9,7 @@
 			^ свойства отображения
 		^ коментарий - всплывающее окошко с доп описанием
 			^ свойства форматирования
-			^ свойства отображения
-			^ форма окошка
+			^ свойства отображения ^ форма окошка
 		- box - их можно вкладывать в самих себя
 		- image - тотже бокс но не бокс
 			^ название
@@ -95,26 +94,32 @@ struct
 "\n}"))
 
 (define (graph-puts name direct . etc) (with-output-to-file (format "~a" name) (lambda()
+   ;(display (format "/* Automata generata (program chart_chart_chart Margenom) */\n\n" name))
    (display (apply graph-dot name direct (if (null? etc) '(()()) etc)))) 'replace))
 
 
 
 ;Edges
 (define (line first . ids) (let rc ((from first) (ost ids))
-    (if (null? ost) #f (begin (set! graph-edges (cons 
+    (if (null? ost) first (begin (set! graph-edges (cons 
       (if (pair? (car ost)) 
           (list from (caar ost) (cons `(label ,(cdr-list (car ost))) defs-edge))
           `(,from ,(car ost) ,defs-edge))
     graph-edges)) (rc (car ost) (cdr ost))))))
 
 (define (group from . ids)
-  (if (null? ids) #f (begin (set! graph-edges (cons 
+  (if (null? ids) from (begin (set! graph-edges (cons 
       (if (pair? (car ids)) 
           (list from (caar ids) (cons `(label ,(cdr-list (car ids))) defs-edge))
           `(,from ,(car ids) ,defs-edge))
   graph-edges)) (apply group from (cdr ids)))))
 
-(define (toin . ids) (apply group (reverse ids)))
+(define (toone to . ids)
+  (if (null? ids) to (begin (set! graph-edges (cons 
+      (if (pair? (car ids)) 
+          (list (caar ids) to (cons `(label ,(cdr-list (car ids))) defs-edge))
+          `(,(car ids) ,to ,defs-edge))
+  graph-edges)) (apply toone to (cdr ids)))))
 
 ;Clustes
 (define (sub root . ids) (set! graph-subs (cons `(,root ,ids ,defs-sub) graph-edges)))
@@ -193,3 +198,12 @@ struct
           ;(cairo-set-source-rgba cr 1 0.2 0.2 0.6) 
           ;(cairo-set-line-width cr 6.0) 
           #;(cairo-arc cr x y 10.0 0 (* 2 pi))))))
+
+
+#;(define (opts-app opts-list . obj-names)
+  (define (opts-def defs opts) ((lambda(d) (append opts d)) (filter (lambda(d) (not (member (car d) opts))) defs)))
+  (let rc((objs obj-names)) (let ((obj (assoc (car objs) objs)))
+    (set! graph-objects (cons (append (list-car objs 2) (opts-def defs-box (append 
+                                                                         `((label . ,text) (shape . "box")) 
+                                                                         (if name (cdr opts) opts))))
+                              graph-objects)))))
